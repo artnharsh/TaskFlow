@@ -4,6 +4,12 @@ const asyncHandler = require("../utils/asyncHandler");
 const ai = require("../services/aiService");
 const { emitToBoard, logActivity } = require("../realtime");
 
+/**
+ * Generate a list of tasks for a given goal using AI.
+ * Optionally appends them to a specific column if column_id is provided.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 const generateTasks = asyncHandler(async (req, res) => {
   const goal = (req.body.goal || "").trim();
 
@@ -17,17 +23,16 @@ const generateTasks = asyncHandler(async (req, res) => {
     return res.json({ tasks: suggestions, persisted: false });
   }
 
-  const colRes = await query(
-    "SELECT id FROM columns WHERE id = $1 AND board_id = $2",
-    [req.body.column_id, req.board.id]
-  );
+  const colRes = await query("SELECT id FROM columns WHERE id = $1 AND board_id = $2", [
+    req.body.column_id,
+    req.board.id,
+  ]);
 
-  if (!colRes.rows.length)
-    throw ApiError.badRequest("column_id does not belong to this board");
+  if (!colRes.rows.length) throw ApiError.badRequest("column_id does not belong to this board");
 
   const baseRes = await query(
     "SELECT COALESCE(MAX(position), 0) AS pos FROM tasks WHERE column_id = $1",
-    [req.body.column_id]
+    [req.body.column_id],
   );
 
   let pos = Number(baseRes.rows[0].pos);
@@ -41,15 +46,7 @@ const generateTasks = asyncHandler(async (req, res) => {
       `INSERT INTO tasks (board_id, column_id, title, description, priority, position, created_by)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [
-        req.board.id,
-        req.body.column_id,
-        s.title,
-        s.description,
-        s.priority,
-        pos,
-        req.user.id,
-      ]
+      [req.board.id, req.body.column_id, s.title, s.description, s.priority, pos, req.user.id],
     );
 
     created.push(rows[0]);
@@ -68,18 +65,21 @@ const generateTasks = asyncHandler(async (req, res) => {
   res.status(201).json({ tasks: created, persisted: true });
 });
 
+/**
+ * Break down an existing task into smaller subtasks using AI.
+ * If taskId is provided, fetches the existing title/description first.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 const breakdownTask = asyncHandler(async (req, res) => {
   let { title, description } = req.body;
 
-  const count = Math.min(
-    Math.max(parseInt(req.body.count, 10) || 5, 1),
-    12
-  );
+  const count = Math.min(Math.max(parseInt(req.body.count, 10) || 5, 1), 12);
 
   if (req.body.taskId) {
     const { rows } = await query(
       "SELECT title, description FROM tasks WHERE id = $1 AND board_id = $2",
-      [req.body.taskId, req.board.id]
+      [req.body.taskId, req.board.id],
     );
 
     if (!rows.length) throw ApiError.notFound("Task not found");
@@ -88,25 +88,26 @@ const breakdownTask = asyncHandler(async (req, res) => {
     description = rows[0].description;
   }
 
-  if (!title)
-    throw ApiError.badRequest("A task title (or taskId) is required");
+  if (!title) throw ApiError.badRequest("A task title (or taskId) is required");
 
   const subtasks = await ai.breakdownTask(title, description, count);
 
   res.json({ subtasks });
 });
 
+/**
+ * Summarize the current state of a Kanban board using AI.
+ * Gathers board, column, and task data to construct a sprint summary.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 const summarizeBoard = asyncHandler(async (req, res) => {
   const [boardRes, colsRes, tasksRes] = await Promise.all([
     query("SELECT title FROM boards WHERE id = $1", [req.board.id]),
-    query(
-      "SELECT id, title FROM columns WHERE board_id = $1 ORDER BY position ASC",
-      [req.board.id]
-    ),
-    query(
-      "SELECT column_id, title, priority FROM tasks WHERE board_id = $1",
-      [req.board.id]
-    ),
+    query("SELECT id, title FROM columns WHERE board_id = $1 ORDER BY position ASC", [
+      req.board.id,
+    ]),
+    query("SELECT column_id, title, priority FROM tasks WHERE board_id = $1", [req.board.id]),
   ]);
 
   const columns = colsRes.rows.map((c) => ({
