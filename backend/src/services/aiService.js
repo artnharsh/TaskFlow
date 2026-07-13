@@ -56,7 +56,7 @@ const runPrompt = async (prompt) => {
     if (status === 429) {
       throw new ApiError(
         429,
-        "AI quota exceeded. Check your Gemini plan/billing and try again later."
+        err.message || "AI quota exceeded. Check your Gemini plan/billing and try again later."
       );
     }
 
