@@ -28,10 +28,10 @@ const register = asyncHandler(async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 10);
 
     const newUser = await query(
-        `INSERT INTO users (name, email, password_hash)
+      `INSERT INTO users (name, email, password_hash)
         VALUES ($1, $2, $3) 
         RETURNING id, name, email, avatar_url, created_at`,
-        [name, email, passwordHash]
+      [name, email, passwordHash],
     );
 
     const user = newUser.rows[0];
@@ -77,7 +77,7 @@ const me = asyncHandler(async (req, res) => {
         "SELECT id, email, name, avatar_url, created_at FROM users WHERE id = $1", 
         [req.user.id],
     );
-
+        
     if(!user.rows.length) throw ApiError.notFound("User not found");
 
     res.json({ user: publicUser(user.rows[0]) });

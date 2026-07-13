@@ -7,9 +7,7 @@ const signToken = (payload) => {
 };
 
 const verifyToken = (token) => {
-    return new Promise((resolve, reject) => {
-        jwt.verify(token, process.env.JWT_SECRET);
-    });
+  return jwt.verify(token, process.env.JWT_SECRET);
 };
 
 module.exports = {
