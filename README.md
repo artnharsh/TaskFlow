@@ -1,111 +1,94 @@
-# TaskFlow
+# TaskFlow (pnpm Monorepo + TypeScript)
 
-![TaskFlow Banner](./frontend/public/vite.svg) <!-- Replace with actual banner if available -->
+![TaskFlow Banner](./apps/web/public/vite.svg)
 
-TaskFlow is a production-ready, AI-augmented, real-time collaborative Kanban board built for modern teams.
+TaskFlow is a production-ready, AI-augmented, real-time collaborative Kanban board built for modern engineering teams.
 
-## 🚀 Vision
+## 🚀 Architecture Overview
 
-TaskFlow aims to bridge the gap between simple task management and intelligent project planning. It leverages real-time synchronization (via Socket.io) to ensure everyone on the team stays in sync, and deeply integrates AI (Gemini/Ollama) to autonomously break down complex goals into prioritized, actionable backlogs.
+TaskFlow is structured as a **Type-Safe Monorepo** using `pnpm` Workspaces and **TypeScript**:
 
-## ✨ Features
+```text
+TaskFlow/
+├── apps/
+│   ├── web/        # React 19 + Vite + TailwindCSS frontend (@taskflow/web)
+│   └── api/        # Node.js + Express + PostgreSQL backend (@taskflow/api)
+├── packages/
+│   └── types/      # Shared TypeScript interfaces & Socket event maps (@taskflow/types)
+├── .husky/         # Pre-commit hooks (Typecheck + Lint-staged)
+├── pnpm-workspace.yaml
+└── package.json
+```
 
-- **Real-Time Collaboration**: Changes to boards, columns, and tasks sync instantly across all connected clients.
-- **AI Task Generation**: Tell the AI your sprint goal, and it will generate a complete, prioritized Kanban backlog in seconds.
-- **AI Task Breakdown**: Break down complex, opaque tasks into manageable subtasks instantly.
-- **Beautiful, Dynamic UI**: Built with modern aesthetics, glassmorphism, smooth micro-animations (Framer Motion), and a highly responsive drag-and-drop interface (@dnd-kit).
-- **Workspace Analytics**: Comprehensive KPI dashboards and visual breakdowns of your workload.
+### Key Technical Highlights
 
-## 🏗 Architecture
+- **Shared Types (`@taskflow/types`)**: The frontend and backend consume identical entity definitions (`Board`, `Task`, `Column`, `User`, `SocketEvents`), ensuring full contract synchronization.
+- **Pluggable AI Providers**: Abstract AI Provider pattern supporting **Gemini** (`@google/genai`) and local **Ollama** LLMs seamlessly.
+- **Real-Time Synchronized Canvas**: Websocket room architecture via `socket.io` broadcasting board events in real-time.
+- **Database Migrations**: `node-pg-migrate` managing SQL schema migrations reproducibly.
+- **Pre-commit Quality Gate**: Automated pre-commit hooks (`husky` + `lint-staged`) enforcing `pnpm typecheck` and `prettier` formatting before code lands in git.
 
-TaskFlow uses a modern, decoupled monolithic architecture:
-
-- **Frontend (Client)**
-  - **Framework**: React 19 + Vite
-  - **Styling**: TailwindCSS v4 + Vanilla CSS
-  - **State/Routing**: React Router DOM + Custom Context Providers
-  - **Realtime**: `socket.io-client`
-  - **Interactions**: `@dnd-kit` for native drag-and-drop, `framer-motion` for transitions.
-  - *Modularity*: API calls are strictly decoupled inside `src/lib/api/` and complex views are broken down into small, single-responsibility components.
-
-- **Backend (Server)**
-  - **Runtime**: Node.js + Express
-  - **Database**: PostgreSQL (Raw SQL queries via `pg`)
-  - **Migrations**: Managed via `node-pg-migrate`
-  - **Realtime**: `socket.io` for room-based WebSocket broadcasting
-  - **Authentication**: JWT (JSON Web Tokens) with hashed passwords (`bcryptjs`).
-  - **AI Integration**: Pluggable provider architecture (`GeminiProvider`, `OllamaProvider`) via `@google/genai`.
+---
 
 ## 🛠 Prerequisites
 
-Make sure you have the following installed on your local machine:
-- Node.js (v18+ recommended)
-- PostgreSQL (Running locally or via Docker)
+Make sure you have the following installed:
 
-## ⚙️ Setup & Installation
+- **Node.js**: v18+
+- **pnpm**: v9+ (`npm i -g pnpm`)
+- **PostgreSQL**: Running locally or via Docker
 
-We provide a streamlined `Makefile` to handle all the setup heavy lifting.
+---
 
-### 1. Environment Configuration
+## ⚙️ Quick Start
 
-Copy the example environment variables and update them with your actual Database URL and API keys.
+### 1. Environment Setup
 
-```bash
-cp backend/.env.example backend/.env
-```
-
-Ensure your `backend/.env` has:
-```env
-PORT=8000
-DATABASE_URL=postgres://user:password@localhost:5432/taskflow
-JWT_SECRET=your_super_secret_jwt_key_here
-FRONTEND_URL=http://localhost:5173
-
-# AI Configuration
-AI_PROVIDER=gemini # or 'ollama'
-GEMINI_API_KEY=your_gemini_api_key
-```
-
-### 2. Quick Start
-
-Run the following command to install all dependencies for both frontend and backend:
+Copy the example environment file into `apps/api/.env`:
 
 ```bash
-make install
+cp apps/api/.env.example apps/api/.env
 ```
 
-### 3. Database Initialization
+### 2. Monorepo Installation
 
-Run the database migrations to set up your PostgreSQL schema:
+Install all workspace dependencies, link internal packages (`@taskflow/types`), and set up pre-commit hooks:
 
 ```bash
-make db-init
+pnpm install
 ```
 
-*(Optional) Seed the database with sample data:*
-```bash
-npm --prefix backend run db:seed
-```
+### 3. Database Migration
 
-### 4. Run the Application
-
-Start both the frontend and backend servers concurrently:
+Run migrations to provision your PostgreSQL database:
 
 ```bash
-make start
+pnpm db:init
 ```
 
-- **Frontend**: [http://localhost:5173](http://localhost:5173)
-- **Backend API**: [http://localhost:8000/api](http://localhost:8000/api)
+### 4. Start Development Applications
 
-## 🧑‍💻 Developer Commands
+Launch both frontend and backend concurrently:
 
-The `Makefile` exposes several utility commands to ensure code quality:
+```bash
+pnpm dev
+# OR
+pnpm start
+```
 
-- `make lint`: Run ESLint on the backend.
-- `make format`: Run Prettier formatting on the backend.
-- `make test`: Run backend tests (if configured).
+- **Web Frontend**: [http://localhost:5173](http://localhost:5173)
+- **API Backend**: [http://localhost:8000/api](http://localhost:8000/api)
 
-## 🛡 License
+---
 
-This project is licensed under the ISC License.
+## 🧑‍💻 Monorepo Scripts Reference
+
+All developer commands are available directly via `pnpm`:
+
+- `pnpm dev`: Run development servers in parallel across all apps.
+- `pnpm build`: Build production output bundles across all apps and packages.
+- `pnpm typecheck`: Run workspace-wide TypeScript typechecking (`tsc --noEmit`).
+- `pnpm lint`: Run ESLint across all workspace projects.
+- `pnpm format`: Auto-format entire codebase using Prettier.
+- `pnpm db:init`: Run database migrations up to date.
+- `pnpm db:rollback`: Rollback the latest migration.
