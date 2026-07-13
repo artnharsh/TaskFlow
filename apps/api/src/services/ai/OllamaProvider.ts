@@ -8,8 +8,8 @@ export class OllamaProvider extends AiProvider {
 
   constructor() {
     super();
-    this.host = config.OLLAMA_HOST;
-    this.model = config.OLLAMA_MODEL;
+    this.host = config.AI_HOST || "http://localhost:11434";
+    this.model = config.AI_MODEL || "qwen2.5";
   }
 
   async runPrompt(prompt: string): Promise<string> {

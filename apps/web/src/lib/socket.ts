@@ -1,9 +1,8 @@
 import { io, Socket } from "socket.io-client";
 import { getToken } from "./api/client";
+import { config as envConfig } from "../config/env";
 
-const URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:8000";
-
-export const socket: Socket = io(URL, {
+export const socket: Socket = io(envConfig.VITE_SOCKET_URL, {
   autoConnect: false,
   auth: (cb) => {
     cb({ token: getToken() });

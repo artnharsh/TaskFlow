@@ -5,22 +5,24 @@ import ApiError from "../../utils/ApiError";
 
 export class GeminiProvider extends AiProvider {
   private ai: GoogleGenAI | null = null;
+  private model: string;
 
   constructor() {
     super();
-    if (config.GEMINI_API_KEY) {
-      this.ai = new GoogleGenAI({ apiKey: config.GEMINI_API_KEY });
+    this.model = config.AI_MODEL || "gemini-2.5-flash";
+    if (config.AI_API_KEY) {
+      this.ai = new GoogleGenAI({ apiKey: config.AI_API_KEY });
     }
   }
 
   async runPrompt(prompt: string): Promise<string> {
     if (!this.ai) {
-      throw ApiError.internalServer("GEMINI_API_KEY is not configured on the server.");
+      throw ApiError.internalServer("AI_API_KEY is not configured on the server.");
     }
 
     try {
       const response = await this.ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: this.model,
         contents: prompt,
       });
 
