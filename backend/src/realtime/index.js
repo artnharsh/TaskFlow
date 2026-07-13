@@ -19,13 +19,7 @@ const logActivity = async ({ boardId, userId, action, message, metadata }) => {
     VALUES ($1, $2, $3, $4, $5)
     RETURNING id, board_id, user_id, action, message, metadata, created_at
     `,
-    [
-      boardId,
-      userId || null,
-      action,
-      message,
-      metadata ? JSON.stringify(metadata) : null,
-    ]
+    [boardId, userId || null, action, message, metadata ? JSON.stringify(metadata) : null],
   );
 
   const activity = rows[0];

@@ -16,22 +16,27 @@ const fetchTask = async (taskId) => {
       LEFT JOIN users a ON a.id = t.assignee_id
      WHERE t.id = $1
     `,
-    [taskId]
+    [taskId],
   );
 
   return rows[0];
 };
 
 const ensureColumnInBoard = async (columnId, boardId) => {
-  const { rows } = await query(
-    "SELECT id FROM columns WHERE id = $1 AND board_id = $2",
-    [columnId, boardId]
-  );
+  const { rows } = await query("SELECT id FROM columns WHERE id = $1 AND board_id = $2", [
+    columnId,
+    boardId,
+  ]);
 
-  if (!rows.length)
-    throw ApiError.badRequest("Column does not belong to this board");
+  if (!rows.length) throw ApiError.badRequest("Column does not belong to this board");
 };
 
+/**
+ * List all tasks for a board.
+ * Supports filtering by priority, assignee, column, and a text query.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 const listTasks = asyncHandler(async (req, res) => {
   const filters = ["t.board_id = $1"];
   const params = [req.board.id];
@@ -53,9 +58,7 @@ const listTasks = asyncHandler(async (req, res) => {
 
   if (req.query.q) {
     params.push(`%${req.query.q}%`);
-    filters.push(
-      `(t.title ILIKE $${params.length} OR t.description ILIKE $${params.length})`
-    );
+    filters.push(`(t.title ILIKE $${params.length} OR t.description ILIKE $${params.length})`);
   }
 
   const { rows } = await query(
@@ -69,31 +72,33 @@ const listTasks = asyncHandler(async (req, res) => {
      WHERE ${filters.join(" AND ")}
      ORDER BY t.position ASC
     `,
-    params
+    params,
   );
 
   res.json({ tasks: rows });
 });
 
+/**
+ * Create a new task within a specific column.
+ * Appends the task to the bottom of the column (highest position).
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 const createTask = asyncHandler(async (req, res) => {
   const { column_id, title: rawTitle, description, due_date, assignee_id } = req.body;
 
   const title = (rawTitle || "").trim();
-  const priority = PRIORITIES.includes(req.body.priority)
-    ? req.body.priority
-    : "medium";
+  const priority = PRIORITIES.includes(req.body.priority) ? req.body.priority : "medium";
 
-  if (!title)
-    throw ApiError.badRequest("Task title is required");
+  if (!title) throw ApiError.badRequest("Task title is required");
 
-  if (!column_id)
-    throw ApiError.badRequest("column_id is required");
+  if (!column_id) throw ApiError.badRequest("column_id is required");
 
   await ensureColumnInBoard(column_id, req.board.id);
 
   const posRes = await query(
     "SELECT COALESCE(MAX(position), 0) + 1000 AS pos FROM tasks WHERE column_id = $1",
-    [column_id]
+    [column_id],
   );
 
   const { rows } = await query(
@@ -113,7 +118,7 @@ const createTask = asyncHandler(async (req, res) => {
       assignee_id || null,
       posRes.rows[0].pos,
       req.user.id,
-    ]
+    ],
   );
 
   const task = await fetchTask(rows[0].id);
@@ -131,6 +136,12 @@ const createTask = asyncHandler(async (req, res) => {
   res.status(201).json({ task });
 });
 
+/**
+ * Update task details (title, description, priority, due date, assignee).
+ * Emits a real-time event to connected clients.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 const updateTask = asyncHandler(async (req, res) => {
   const { title, description, priority, due_date, assignee_id } = req.body;
 
@@ -155,7 +166,7 @@ const updateTask = asyncHandler(async (req, res) => {
       priority ?? null,
       due_date ?? null,
       assignee_id === undefined ? null : assignee_id,
-    ]
+    ],
   );
 
   if (!rows.length) throw ApiError.notFound("Task not found");
@@ -166,6 +177,12 @@ const updateTask = asyncHandler(async (req, res) => {
   res.json({ task });
 });
 
+/**
+ * Move a task to a new column and/or position.
+ * Handles re-ordering within the board and logs the activity if the column changes.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 const moveTask = asyncHandler(async (req, res) => {
   const { column_id, position } = req.body;
 
@@ -176,7 +193,7 @@ const moveTask = asyncHandler(async (req, res) => {
 
   const prevRes = await query(
     "SELECT t.column_id, c.title FROM tasks t JOIN columns c ON c.id = t.column_id WHERE t.id = $1 AND t.board_id = $2",
-    [req.params.taskId, req.board.id]
+    [req.params.taskId, req.board.id],
   );
 
   if (!prevRes.rows.length) throw ApiError.notFound("Task not found");
@@ -188,7 +205,7 @@ const moveTask = asyncHandler(async (req, res) => {
         SET column_id = $3, position = $4, updated_at = now()
       WHERE id = $1 AND board_id = $2
       RETURNING id`,
-    [req.params.taskId, req.board.id, column_id, position]
+    [req.params.taskId, req.board.id, column_id, position],
   );
 
   const task = await fetchTask(rows[0].id);
@@ -196,10 +213,7 @@ const moveTask = asyncHandler(async (req, res) => {
   emitToBoard(req.board.id, "task:moved", task);
 
   if (movedColumns) {
-    const colRes = await query(
-      "SELECT title FROM columns WHERE id = $1",
-      [column_id]
-    );
+    const colRes = await query("SELECT title FROM columns WHERE id = $1", [column_id]);
 
     await logActivity({
       boardId: req.board.id,
@@ -213,10 +227,16 @@ const moveTask = asyncHandler(async (req, res) => {
   res.json({ task });
 });
 
+/**
+ * Delete a task from the board.
+ * Emits a real-time event and logs the deletion activity.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 const deleteTask = asyncHandler(async (req, res) => {
   const { rows } = await query(
     "DELETE FROM tasks WHERE id = $1 AND board_id = $2 RETURNING title",
-    [req.params.taskId, req.board.id]
+    [req.params.taskId, req.board.id],
   );
 
   if (!rows.length) throw ApiError.notFound("Task not found");

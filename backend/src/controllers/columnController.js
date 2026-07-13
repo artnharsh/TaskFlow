@@ -1,17 +1,16 @@
-const {query} = require("../config/db");
+const { query } = require("../config/db");
 const ApiError = require("../utils/ApiError");
 const asyncHandler = require("../utils/asyncHandler");
-const {emitToBoard} = require("../controllers/boardController");
+const { emitToBoard } = require("../controllers/boardController");
 
 const createColumn = asyncHandler(async (req, res) => {
   const title = (req.body.title || "").trim();
 
-  if (!title)
-    throw ApiError.badRequest("Column title is required");
+  if (!title) throw ApiError.badRequest("Column title is required");
 
   const posRes = await query(
     "SELECT COALESCE(MAX(position), 0) + 1000 AS pos FROM columns WHERE board_id = $1",
-    [req.board.id]
+    [req.board.id],
   );
 
   const { rows } = await query(
@@ -20,7 +19,7 @@ const createColumn = asyncHandler(async (req, res) => {
     VALUES ($1, $2, $3)
     RETURNING *
     `,
-    [req.board.id, title, posRes.rows[0].pos]
+    [req.board.id, title, posRes.rows[0].pos],
   );
 
   emitToBoard(req.board.id, "column:created", rows[0]);
@@ -39,11 +38,10 @@ const updateColumn = asyncHandler(async (req, res) => {
      WHERE id = $1 AND board_id = $2
      RETURNING *
     `,
-    [req.params.columnId, req.board.id, title ?? null, position ?? null]
+    [req.params.columnId, req.board.id, title ?? null, position ?? null],
   );
 
-  if (!rows.length)
-    throw ApiError.notFound("Column not found");
+  if (!rows.length) throw ApiError.notFound("Column not found");
 
   emitToBoard(req.board.id, "column:updated", rows[0]);
 
@@ -51,13 +49,12 @@ const updateColumn = asyncHandler(async (req, res) => {
 });
 
 const deleteColumn = asyncHandler(async (req, res) => {
-  const result = await query(
-    "DELETE FROM columns WHERE id = $1 AND board_id = $2",
-    [req.params.columnId, req.board.id]
-  );
+  const result = await query("DELETE FROM columns WHERE id = $1 AND board_id = $2", [
+    req.params.columnId,
+    req.board.id,
+  ]);
 
-  if (!result.rowCount)
-    throw ApiError.notFound("Column not found");
+  if (!result.rowCount) throw ApiError.notFound("Column not found");
 
   emitToBoard(req.board.id, "column:deleted", {
     id: req.params.columnId,

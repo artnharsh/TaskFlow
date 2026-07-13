@@ -5,6 +5,12 @@ const { emitToBoard, logActivity } = require("../realtime");
 
 const DEFAULT_COLUMNS = ["Todo", "In Progress", "Review", "Done"];
 
+/**
+ * List all boards the user owns or is a member of.
+ * Includes task count and member count for dashboard views.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 const listBoards = asyncHandler(async (req, res) => {
   const { rows } = await query(
     `
@@ -17,12 +23,18 @@ const listBoards = asyncHandler(async (req, res) => {
       WHERE b.owner_id = $1 OR bm.user_id = $1
       ORDER BY b.updated_at DESC
     `,
-    [req.user.id]
+    [req.user.id],
   );
 
   res.json({ boards: rows });
 });
 
+/**
+ * Create a new board.
+ * Automatically adds the creator as the owner and creates default columns.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 const createBoard = asyncHandler(async (req, res) => {
   const title = (req.body.title || "").trim();
   const description = (req.body.description || "").trim() || null;
@@ -35,21 +47,22 @@ const createBoard = asyncHandler(async (req, res) => {
       INSERT INTO boards (title, description, color, owner_id)
       VALUES ($1, $2, $3, $4) RETURNING *
       `,
-      [title, description, color, req.user.id]
+      [title, description, color, req.user.id],
     );
 
     const b = rows[0];
 
     await client.query(
       `INSERT INTO board_members (board_id, user_id, role) VALUES ($1, $2, 'owner')`,
-      [b.id, req.user.id]
+      [b.id, req.user.id],
     );
 
     for (let i = 0; i < DEFAULT_COLUMNS.length; i++) {
-      await client.query(
-        `INSERT INTO columns (board_id, title, position) VALUES ($1, $2, $3)`,
-        [b.id, DEFAULT_COLUMNS[i], (i + 1) * 1000]
-      );
+      await client.query(`INSERT INTO columns (board_id, title, position) VALUES ($1, $2, $3)`, [
+        b.id,
+        DEFAULT_COLUMNS[i],
+        (i + 1) * 1000,
+      ]);
     }
 
     return b;
@@ -58,15 +71,18 @@ const createBoard = asyncHandler(async (req, res) => {
   res.status(201).json({ board });
 });
 
+/**
+ * Get full board details including all columns, tasks, and members.
+ * Requires the user to have access to the board.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 const getBoard = asyncHandler(async (req, res) => {
   const boardId = req.board.id;
 
   const [boardRes, columnsRes, tasksRes, membersRes] = await Promise.all([
     query("SELECT * FROM boards WHERE id = $1", [boardId]),
-    query(
-      "SELECT * FROM columns WHERE board_id = $1 ORDER BY position ASC",
-      [boardId]
-    ),
+    query("SELECT * FROM columns WHERE board_id = $1 ORDER BY position ASC", [boardId]),
     query(
       `
       SELECT t.*,
@@ -75,7 +91,7 @@ const getBoard = asyncHandler(async (req, res) => {
       LEFT JOIN users a ON a.id = t.assignee_id
       WHERE t.board_id = $1
       ORDER BY t.position ASC`,
-      [boardId]
+      [boardId],
     ),
     query(
       `
@@ -84,7 +100,7 @@ const getBoard = asyncHandler(async (req, res) => {
       JOIN users u ON u.id = m.user_id
       WHERE m.board_id = $1
       ORDER BY m.joined_at ASC`,
-      [boardId]
+      [boardId],
     ),
   ]);
 
@@ -97,6 +113,12 @@ const getBoard = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * Update a board's basic details (title, description, color).
+ * Emits a real-time event to connected clients.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 const updateBoard = asyncHandler(async (req, res) => {
   const { title, description, color } = req.body;
 
@@ -110,16 +132,21 @@ const updateBoard = asyncHandler(async (req, res) => {
      WHERE id = $1
      RETURNING *
     `,
-    [req.board.id, title ?? null, description ?? null, color ?? null]
+    [req.board.id, title ?? null, description ?? null, color ?? null],
   );
 
   emitToBoard(req.board.id, "board:updated", rows[0]);
   res.json({ board: rows[0] });
 });
 
+/**
+ * Delete a board completely.
+ * Only the owner is permitted to perform this action.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 const deleteBoard = asyncHandler(async (req, res) => {
-  if (req.board.role !== "owner")
-    throw ApiError.forbidden("Only the owner can delete this board");
+  if (req.board.role !== "owner") throw ApiError.forbidden("Only the owner can delete this board");
 
   await query("DELETE FROM boards WHERE id = $1", [req.board.id]);
 
@@ -128,6 +155,12 @@ const deleteBoard = asyncHandler(async (req, res) => {
   res.json({ success: true });
 });
 
+/**
+ * Get the recent activity log for a board.
+ * Useful for audit trails and timeline features.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 const getActivity = asyncHandler(async (req, res) => {
   const limit = Math.min(parseInt(req.query.limit, 10) || 30, 100);
 
@@ -140,12 +173,18 @@ const getActivity = asyncHandler(async (req, res) => {
      ORDER BY act.created_at DESC
      LIMIT $2
     `,
-    [req.board.id, limit]
+    [req.board.id, limit],
   );
 
   res.json({ activities: rows });
 });
 
+/**
+ * Add a new member to the board by their email address.
+ * Only owners or admins can add members.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 const addMember = asyncHandler(async (req, res) => {
   if (req.board.role !== "owner" && req.board.role !== "admin")
     throw ApiError.forbidden("Only owners or admins can add members");
@@ -153,18 +192,15 @@ const addMember = asyncHandler(async (req, res) => {
   const email = (req.body.email || "").trim().toLowerCase();
   const role = req.body.role === "admin" ? "admin" : "member";
 
-  if (!email)
-    throw ApiError.badRequest("Member email is required");
+  if (!email) throw ApiError.badRequest("Member email is required");
 
-  const userRes = await query(
-    "SELECT id, name, email, avatar_url FROM users WHERE email = $1",
-    [email]
-  );
+  const userRes = await query("SELECT id, name, email, avatar_url FROM users WHERE email = $1", [
+    email,
+  ]);
 
   const user = userRes.rows[0];
 
-  if (!user)
-    throw ApiError.notFound("No user found with that email");
+  if (!user) throw ApiError.notFound("No user found with that email");
 
   await query(
     `
@@ -173,7 +209,7 @@ const addMember = asyncHandler(async (req, res) => {
     ON CONFLICT (board_id, user_id)
     DO UPDATE SET role = EXCLUDED.role
     `,
-    [req.board.id, user.id, role]
+    [req.board.id, user.id, role],
   );
 
   await logActivity({
@@ -192,19 +228,24 @@ const addMember = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * Remove a member from the board.
+ * Owners cannot be removed.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 const removeMember = asyncHandler(async (req, res) => {
   if (req.board.role !== "owner" && req.board.role !== "admin")
     throw ApiError.forbidden("Only owners or admins can remove members");
 
   const { userId } = req.params;
 
-  if (userId === req.board.owner_id)
-    throw ApiError.badRequest("Cannot remove the board owner");
+  if (userId === req.board.owner_id) throw ApiError.badRequest("Cannot remove the board owner");
 
-  await query(
-    "DELETE FROM board_members WHERE board_id = $1 AND user_id = $2",
-    [req.board.id, userId]
-  );
+  await query("DELETE FROM board_members WHERE board_id = $1 AND user_id = $2", [
+    req.board.id,
+    userId,
+  ]);
 
   res.json({ success: true });
 });

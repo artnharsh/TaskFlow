@@ -21,68 +21,20 @@ router.delete("/:boardId", requireBoardAccess, board.deleteBoard);
 router.get("/:boardId/activity", requireBoardAccess, board.getActivity);
 
 router.post("/:boardId/members", requireBoardAccess, board.addMember);
-router.delete(
-    "/:boardId/members/:userId",
-    requireBoardAccess,
-    board.removeMember
-);
+router.delete("/:boardId/members/:userId", requireBoardAccess, board.removeMember);
 
-router.post(
-    "/:boardId/columns",
-    requireBoardAccess,
-    column.createColumn
-);
-router.patch(
-    "/:boardId/columns/:columnId",
-    requireBoardAccess,
-    column.updateColumn
-);
-router.delete(
-    "/:boardId/columns/:columnId",
-    requireBoardAccess,
-    column.deleteColumn
-);
+router.post("/:boardId/columns", requireBoardAccess, column.createColumn);
+router.patch("/:boardId/columns/:columnId", requireBoardAccess, column.updateColumn);
+router.delete("/:boardId/columns/:columnId", requireBoardAccess, column.deleteColumn);
 
-router.get(
-    "/:boardId/tasks",
-    requireBoardAccess,
-    task.listTasks
-);
-router.post(
-    "/:boardId/tasks",
-    requireBoardAccess,
-    task.createTask
-);
-router.patch(
-    "/:boardId/tasks/:taskId",
-    requireBoardAccess,
-    task.updateTask
-);
-router.patch(
-    "/:boardId/tasks/:taskId/move",
-    requireBoardAccess,
-    task.moveTask
-);
-router.delete(
-    "/:boardId/tasks/:taskId",
-    requireBoardAccess,
-    task.deleteTask
-);
+router.get("/:boardId/tasks", requireBoardAccess, task.listTasks);
+router.post("/:boardId/tasks", requireBoardAccess, task.createTask);
+router.patch("/:boardId/tasks/:taskId", requireBoardAccess, task.updateTask);
+router.patch("/:boardId/tasks/:taskId/move", requireBoardAccess, task.moveTask);
+router.delete("/:boardId/tasks/:taskId", requireBoardAccess, task.deleteTask);
 
-router.post(
-    "/:boardId/ai/generate-tasks",
-    requireBoardAccess,
-    ai.generateTasks
-);
-router.post(
-    "/:boardId/ai/breakdown",
-    requireBoardAccess,
-    ai.breakdownTask
-);
-router.post(
-    "/:boardId/ai/summary",
-    requireBoardAccess,
-    ai.summarizeBoard
-);
+router.post("/:boardId/ai/generate-tasks", requireBoardAccess, ai.generateTasks);
+router.post("/:boardId/ai/breakdown", requireBoardAccess, ai.breakdownTask);
+router.post("/:boardId/ai/summary", requireBoardAccess, ai.summarizeBoard);
 
 module.exports = router;

@@ -3,11 +3,7 @@ const ApiError = require("../utils/ApiError");
 const asyncHandler = require("../utils/asyncHandler");
 
 const requireBoardAccess = asyncHandler(async (req, _res, next) => {
-  const boardId =
-    req.params.boardId ||
-    req.params.id ||
-    req.body.board_id ||
-    req.query.board_id;
+  const boardId = req.params.boardId || req.params.id || req.body.board_id || req.query.board_id;
 
   if (!boardId) throw ApiError.badRequest("board id is required");
 
@@ -19,7 +15,7 @@ const requireBoardAccess = asyncHandler(async (req, _res, next) => {
         ON m.board_id = b.id AND m.user_id = $2
       WHERE b.id = $1
     `,
-    [boardId, req.user.id]
+    [boardId, req.user.id],
   );
 
   const board = rows[0];
