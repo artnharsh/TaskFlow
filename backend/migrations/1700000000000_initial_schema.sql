@@ -1,3 +1,4 @@
+-- Up Migration
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 CREATE TABLE IF NOT EXISTS users (
@@ -5,18 +6,18 @@ CREATE TABLE IF NOT EXISTS users (
     name                TEXT NOT NULL,
     email               TEXT UNIQUE NOT NULL,
     password_hash       TEXT NOT NULL,
-    avatar_url          TEXT  
-    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    avatar_url          TEXT,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS boards (
-    id                  UUID PRIMARY KEY DEFAULT gen_random(),
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title               TEXT NOT NULL,
     description         TEXT NOT NULL,
     color               TEXT DEFAULT '#6366f1',
     owner_id            UUID NOT NULL,
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS board_members (
@@ -32,7 +33,7 @@ CREATE TABLE IF NOT EXISTS columns (
     board_id            UUID NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
     title               TEXT NOT NULL,
     position            DOUBLE PRECISION NOT NULL DEFAULT 1000,
-    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS tasks (
@@ -60,23 +61,18 @@ CREATE TABLE IF NOT EXISTS activities (
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_boards_owner
-    ON boards(owner_id);
+CREATE INDEX IF NOT EXISTS idx_boards_owner ON boards(owner_id);
+CREATE INDEX IF NOT EXISTS idx_columns_board ON columns(board_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_board ON tasks(board_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_column ON tasks(column_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_assignee ON tasks(assignee_id);
+CREATE INDEX IF NOT EXISTS idx_members_user ON board_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_activities_board ON activities(board_id, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_columns_board
-    ON columns(board_id);
-
-CREATE INDEX IF NOT EXISTS idx_tasks_board
-    ON tasks(board_id);
-
-CREATE INDEX IF NOT EXISTS idx_tasks_column
-    ON tasks(column_id);
-
-CREATE INDEX IF NOT EXISTS idx_tasks_assignee
-    ON tasks(assignee_id);
-
-CREATE INDEX IF NOT EXISTS idx_members_user
-    ON board_members(user_id);
-
-CREATE INDEX IF NOT EXISTS idx_activities_board
-    ON activities(board_id, created_at DESC);
+-- Down Migration
+DROP TABLE IF EXISTS activities;
+DROP TABLE IF EXISTS tasks;
+DROP TABLE IF EXISTS columns;
+DROP TABLE IF EXISTS board_members;
+DROP TABLE IF EXISTS boards;
+DROP TABLE IF EXISTS users;

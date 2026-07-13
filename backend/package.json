@@ -9,8 +9,11 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
-    "db:init": "node src/db/init.js",
-    "db:seed": "node src/db/seed.js"
+    "migrate": "node-pg-migrate",
+    "migrate:up": "node-pg-migrate up",
+    "db:seed": "node src/db/seed.js",
+    "lint": "eslint . || true",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@google/genai": "^1.52.0",
@@ -19,7 +22,11 @@
     "dotenv": "^16.4.5",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
+    "node-pg-migrate": "^8.0.4",
     "pg": "^8.13.1",
     "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.5"
   }
 }
