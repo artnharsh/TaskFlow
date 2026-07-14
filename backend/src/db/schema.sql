@@ -5,18 +5,18 @@ CREATE TABLE IF NOT EXISTS users (
     name                TEXT NOT NULL,
     email               TEXT UNIQUE NOT NULL,
     password_hash       TEXT NOT NULL,
-    avatar_url          TEXT  
-    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    avatar_url          TEXT,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS boards (
-    id                  UUID PRIMARY KEY DEFAULT gen_random(),
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title               TEXT NOT NULL,
     description         TEXT NOT NULL,
     color               TEXT DEFAULT '#6366f1',
     owner_id            UUID NOT NULL,
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS board_members (
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS columns (
     board_id            UUID NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
     title               TEXT NOT NULL,
     position            DOUBLE PRECISION NOT NULL DEFAULT 1000,
-    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS tasks (

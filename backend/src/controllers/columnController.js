@@ -1,7 +1,7 @@
 const {query} = require("../config/db");
 const ApiError = require("../utils/ApiError");
 const asyncHandler = require("../utils/asyncHandler");
-const {emitToBoard} = require("../controllers/boardController");
+const {emitToBoard} = require("../realtime");
 
 const createColumn = asyncHandler(async (req, res) => {
   const title = (req.body.title || "").trim();

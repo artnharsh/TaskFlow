@@ -1,13 +1,16 @@
 require("dotenv").config();
-console.log(process.env.JWT_SECRET);
+
 const express = require('express');
 const cors = require("cors");
+const http = require("http");
 
 const apiRoutes = require("./src/routes");
 const {
     errorHandler,
     notFoundHandler
 } = require("./src/middleware/errorHandler");
+
+const {initSocket} = require("../backend/src/socket/index")
 
 const app = express();
 
@@ -29,8 +32,11 @@ app.use("/api", apiRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
+const server = http.createServer(app);
+initSocket(server);
+
 // Start the server
 const PORT = process.env.PORT || 8000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server is running on port http://localhost:${PORT}`);
 });
