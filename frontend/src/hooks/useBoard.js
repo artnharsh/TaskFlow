@@ -168,8 +168,8 @@ export const useBoard = (boardId) => {
   const addColumn = useCallback(
     async (title) => {
       try {
-        const col = await columnApi.create(boardId, { title });
-        setColumns((p) => [...p, col].sort((a, b) => a.position - b.position));
+        await columnApi.create(boardId, { title });
+        // State update handled by the "column:created" socket event
       } catch (err) {
         toast.error(err.message);
       }
