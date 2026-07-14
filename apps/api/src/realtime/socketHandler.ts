@@ -17,7 +17,7 @@ const checkBoardAccess = async (boardId: string, userId: string): Promise<boolea
     );
     return rows.length > 0;
   } catch (error) {
-    console.error("Error checking board access for socket:", error);
+    console.error("❌ [Socket Access Check Error]:", error);
     return false;
   }
 };
@@ -26,35 +26,52 @@ export const setupSocket = (io: Server) => {
   io.use((socket: AuthenticatedSocket, next) => {
     try {
       const token = socket.handshake.auth?.token;
-      if (!token) return next(new Error("Authentication error: No token provided"));
+      if (!token) return next(new Error("Authentication error: No authentication token provided"));
 
       const decoded = verifyToken(token);
       socket.user = decoded;
       next();
-    } catch (err) {
-      next(new Error("Authentication error: Invalid token"));
+    } catch (err: any) {
+      console.warn("⚠️ [Socket Auth Warning]: Connection refused - invalid JWT token.");
+      next(new Error("Authentication error: Invalid or expired authentication token"));
     }
   });
 
   io.on("connection", (socket: AuthenticatedSocket) => {
     socket.on("board:join", async (boardId: string) => {
-      if (!boardId || !socket.user) return;
+      try {
+        if (!boardId || typeof boardId !== "string" || !socket.user) {
+          socket.emit("error", { message: "Invalid payload for board:join" });
+          return;
+        }
 
-      const hasAccess = await checkBoardAccess(boardId, socket.user.id);
-      if (hasAccess) {
-        socket.join(boardRoom(boardId));
-      } else {
-        socket.emit("error", { message: "Unauthorized to join board room" });
+        const hasAccess = await checkBoardAccess(boardId, socket.user.id);
+        if (hasAccess) {
+          socket.join(boardRoom(boardId));
+        } else {
+          socket.emit("error", { message: "Unauthorized: You are not a member of this board" });
+        }
+      } catch (err: any) {
+        console.error("❌ [Socket Join Error]:", err);
+        socket.emit("error", { message: "Internal server error joining board stream" });
       }
     });
 
     socket.on("board:leave", (boardId: string) => {
-      if (!boardId) return;
-      socket.leave(boardRoom(boardId));
+      try {
+        if (!boardId || typeof boardId !== "string") return;
+        socket.leave(boardRoom(boardId));
+      } catch (err: any) {
+        console.error("❌ [Socket Leave Error]:", err);
+      }
     });
 
-    socket.on("disconnect", () => {
-      // Clean up if needed
+    socket.on("error", (err: any) => {
+      console.error("❌ [Socket Protocol Error]:", err);
+    });
+
+    socket.on("disconnect", (reason) => {
+      // Disconnected socket cleanly
     });
   });
 };

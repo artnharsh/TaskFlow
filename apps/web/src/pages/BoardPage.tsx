@@ -141,7 +141,9 @@ const BoardPage = () => {
           />
         </div>
         <FilterSelect value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
-          <option value="">All priorities</option>
+          <option key="all" value="">
+            All priorities
+          </option>
           {PRIORITIES.map((p) => (
             <option key={p.value} value={p.value}>
               {p.label}
@@ -149,7 +151,9 @@ const BoardPage = () => {
           ))}
         </FilterSelect>
         <FilterSelect value={filterAssignee} onChange={(e) => setFilterAssignee(e.target.value)}>
-          <option value="">All assignees</option>
+          <option key="all" value="">
+            All assignees
+          </option>
           {b.members.map((m) => (
             <option key={m.id} value={m.id}>
               {m.name}

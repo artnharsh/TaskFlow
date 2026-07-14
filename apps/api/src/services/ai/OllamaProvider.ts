@@ -25,12 +25,20 @@ export class OllamaProvider extends AiProvider {
       });
 
       if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
+        let errorMsg = `HTTP error! status: ${res.status}`;
+        try {
+          const errData = (await res.json()) as { error?: string };
+          if (errData.error) errorMsg = errData.error;
+        } catch {
+          /* ignore json parse error */
+        }
+        throw new ApiError(500, `Ollama Error: ${errorMsg}`);
       }
 
       const data = (await res.json()) as { response: string };
       return data.response || "";
     } catch (error: any) {
+      if (error instanceof ApiError) throw error;
       console.error("[Ollama Provider Error]", error);
       throw new ApiError(
         502,

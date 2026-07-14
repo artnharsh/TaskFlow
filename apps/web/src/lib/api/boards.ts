@@ -44,6 +44,12 @@ export const boardsApi = {
     return res.data.success;
   },
 
+  // Alias for backward compatibility with components calling remove()
+  remove: async (boardId: string): Promise<boolean> => {
+    const res = await client.delete<{ success: boolean }>(`/boards/${boardId}`);
+    return res.data.success;
+  },
+
   getActivity: async (boardId: string, limit = 30) => {
     const res = await client.get(`/boards/${boardId}/activity`, { params: { limit } });
     return res.data.activities;

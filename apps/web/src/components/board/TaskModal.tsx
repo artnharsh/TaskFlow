@@ -127,7 +127,9 @@ const TaskModal = ({
 
         <div className="grid grid-cols-2 gap-4">
           <Select label="Assignee" value={form.assignee_id} onChange={set("assignee_id")}>
-            <option value="">Unassigned</option>
+            <option key="unassigned" value="">
+              Unassigned
+            </option>
             {members.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.name}

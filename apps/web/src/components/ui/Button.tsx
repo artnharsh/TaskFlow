@@ -1,3 +1,4 @@
+import { ReactNode, ButtonHTMLAttributes } from "react";
 import { cn } from "../../lib/utils";
 import { Loader2 } from "lucide-react";
 
@@ -22,6 +23,15 @@ const sizes = {
   iconSm: "h-8 w-8",
 };
 
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  children?: ReactNode;
+  variant?: keyof typeof variants;
+  size?: keyof typeof sizes;
+  loading?: boolean;
+  className?: string;
+  disabled?: boolean;
+}
+
 const Button = ({
   children,
   variant = "primary",
@@ -30,7 +40,7 @@ const Button = ({
   className,
   disabled,
   ...props
-}) => (
+}: ButtonProps) => (
   <button
     className={cn(
       "inline-flex select-none items-center justify-center whitespace-nowrap rounded-full font-semibold transition-all duration-200 ease-[var(--ease-spring)] focus-ring disabled:opacity-50 disabled:pointer-events-none active:scale-[0.97]",

@@ -83,7 +83,12 @@ export function columnAccent(index: number): string {
   return accents[index % accents.length];
 }
 
-export const PRIORITIES = ["low", "medium", "high", "urgent"];
+export const PRIORITIES = [
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
+  { value: "urgent", label: "Urgent" },
+];
 
 export function priorityMeta(p: string | null | undefined): { label: string; style: string } {
   const meta: Record<string, { label: string; style: string }> = {

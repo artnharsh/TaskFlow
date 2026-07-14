@@ -18,7 +18,7 @@ const COLORS = [
 ];
 
 const CreateBoardModal = ({ open, onClose }) => {
-  const { create } = useBoards();
+  const { createBoard } = useBoards();
   const navigate = useNavigate();
   const [form, setForm] = useState({ title: "", description: "", color: COLORS[0] });
   const [loading, setLoading] = useState(false);
@@ -28,7 +28,7 @@ const CreateBoardModal = ({ open, onClose }) => {
     if (!form.title.trim()) return;
     setLoading(true);
     try {
-      const board = await create(form);
+      const board = await createBoard(form);
       toast.success("Board created");
       onClose();
       setForm({ title: "", description: "", color: COLORS[0] });

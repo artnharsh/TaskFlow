@@ -1,9 +1,22 @@
+import {
+  ReactNode,
+  InputHTMLAttributes,
+  TextareaHTMLAttributes,
+  SelectHTMLAttributes,
+} from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 const labelCls = "block text-xs font-medium tracking-tight text-muted";
 
-export const Input = ({ label, error, className, id, ...props }) => (
+export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+  label?: string;
+  error?: string;
+  className?: string;
+  id?: string;
+}
+
+export const Input = ({ label, error, className, id, ...props }: InputProps) => (
   <div className="space-y-1.5">
     {label && (
       <label htmlFor={id} className={labelCls}>
@@ -19,7 +32,15 @@ export const Input = ({ label, error, className, id, ...props }) => (
   </div>
 );
 
-export const Textarea = ({ label, error, className, id, rows = 4, ...props }) => (
+export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
+  label?: string;
+  error?: string;
+  className?: string;
+  id?: string;
+  rows?: number;
+}
+
+export const Textarea = ({ label, error, className, id, rows = 4, ...props }: TextareaProps) => (
   <div className="space-y-1.5">
     {label && (
       <label htmlFor={id} className={labelCls}>
@@ -40,8 +61,15 @@ export const Textarea = ({ label, error, className, id, rows = 4, ...props }) =>
   </div>
 );
 
+export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
+  label?: string;
+  className?: string;
+  id?: string;
+  children?: ReactNode;
+}
+
 // Form select — appearance reset + custom chevron so it matches our inputs.
-export const Select = ({ label, className, id, children, ...props }) => (
+export const Select = ({ label, className, id, children, ...props }: SelectProps) => (
   <div className="space-y-1.5">
     {label && (
       <label htmlFor={id} className={labelCls}>
@@ -61,8 +89,13 @@ export const Select = ({ label, className, id, children, ...props }) => (
   </div>
 );
 
+export interface FilterSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
+  className?: string;
+  children?: ReactNode;
+}
+
 // Compact pill select used in filter bars.
-export const FilterSelect = ({ className, children, ...props }) => (
+export const FilterSelect = ({ className, children, ...props }: FilterSelectProps) => (
   <div className="relative">
     <select
       className={cn(

@@ -85,7 +85,7 @@ export const getBoard = asyncHandler(async (req: Request, res: Response) => {
     ),
     query(
       `
-      SELECT m.id, m.role, m.joined_at, u.name, u.email, u.avatar_url
+      SELECT u.id, m.role, m.joined_at, u.name, u.email, u.avatar_url
       FROM board_members m
       JOIN users u ON u.id = m.user_id
       WHERE m.board_id = $1

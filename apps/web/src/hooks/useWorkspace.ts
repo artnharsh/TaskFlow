@@ -1,16 +1,27 @@
 import { useState, useEffect } from "react";
 import { boardApi } from "../lib/api";
 import { useBoards } from "../context/BoardsContext";
+import { Task, BoardMember, Board } from "@taskflow/types";
+
+export interface WorkspaceTask extends Task {
+  board_id: string;
+  board_title: string;
+  board_color: string;
+  status: string;
+}
+
+export interface WorkspaceMember extends BoardMember {
+  boards: string[];
+}
 
 /**
  * Aggregates every board the user can see into a single flat list of tasks
  * (each tagged with its board + status) and a de-duplicated member directory.
- * Built entirely from existing endpoints — one boardApi.get() per board.
  */
 export const useWorkspace = () => {
   const { boards, loading: boardsLoading } = useBoards();
-  const [tasks, setTasks] = useState([]);
-  const [members, setMembers] = useState([]);
+  const [tasks, setTasks] = useState<WorkspaceTask[]>([]);
+  const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,13 +38,13 @@ export const useWorkspace = () => {
 
     Promise.all(boards.map((b) => boardApi.get(b.id).catch(() => null))).then((results) => {
       if (cancelled) return;
-      const allTasks = [];
-      const memberMap = new Map();
+      const allTasks: WorkspaceTask[] = [];
+      const memberMap = new Map<string, WorkspaceMember>();
 
       results.forEach((res, i) => {
         if (!res) return;
         const board = res.board || boards[i];
-        const colTitle = {};
+        const colTitle: Record<string, string> = {};
         (res.columns || []).forEach((c) => {
           colTitle[c.id] = c.title;
         });

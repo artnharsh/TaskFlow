@@ -11,6 +11,15 @@ import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 const app = express();
 const server = http.createServer(app);
 
+// Global Process Exception Safety Guards
+process.on("unhandledRejection", (reason: any) => {
+  console.error("🔥 [Unhandled Promise Rejection]:", reason?.stack || reason);
+});
+
+process.on("uncaughtException", (error: Error) => {
+  console.error("💥 [Uncaught Process Exception]:", error.stack || error);
+});
+
 const io = new Server(server, {
   cors: {
     origin: config.FRONTEND_URL,

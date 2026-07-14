@@ -116,7 +116,9 @@ const MyTasks = () => {
               className="h-9 w-56 rounded-full border border-line bg-surface px-4 text-xs shadow-[var(--shadow-card)] outline-none transition-all duration-200 focus:border-brand-500/50 focus:ring-2 focus:ring-brand-500/15"
             />
             <FilterSelect value={priority} onChange={(e) => setPriority(e.target.value)}>
-              <option value="">All priorities</option>
+              <option key="all" value="">
+                All priorities
+              </option>
               {PRIORITIES.map((p) => (
                 <option key={p.value} value={p.value}>
                   {p.label}
@@ -124,7 +126,9 @@ const MyTasks = () => {
               ))}
             </FilterSelect>
             <FilterSelect value={boardId} onChange={(e) => setBoardId(e.target.value)}>
-              <option value="">All boards</option>
+              <option key="all" value="">
+                All boards
+              </option>
               {boardsInPlay.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.title}

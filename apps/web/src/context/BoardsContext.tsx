@@ -8,6 +8,7 @@ interface BoardsContextType {
   loading: boolean;
   refreshBoards: () => Promise<Board[]>;
   createBoard: (data: CreateBoardDTO) => Promise<Board>;
+  create: (data: CreateBoardDTO) => Promise<Board>;
 }
 
 const BoardsContext = createContext<BoardsContextType | null>(null);
@@ -47,7 +48,9 @@ export const BoardsProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <BoardsContext.Provider value={{ boards, loading, refreshBoards, createBoard }}>
+    <BoardsContext.Provider
+      value={{ boards, loading, refreshBoards, createBoard, create: createBoard }}
+    >
       {children}
     </BoardsContext.Provider>
   );

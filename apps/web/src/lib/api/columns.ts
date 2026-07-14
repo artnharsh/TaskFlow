@@ -19,4 +19,10 @@ export const columnsApi = {
     const res = await client.delete<{ success: boolean }>(`/boards/${boardId}/columns/${columnId}`);
     return res.data.success;
   },
+
+  // Alias for backward compatibility with components calling remove()
+  remove: async (boardId: string, columnId: string): Promise<boolean> => {
+    const res = await client.delete<{ success: boolean }>(`/boards/${boardId}/columns/${columnId}`);
+    return res.data.success;
+  },
 };

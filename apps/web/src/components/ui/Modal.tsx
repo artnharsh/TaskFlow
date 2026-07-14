@@ -1,10 +1,28 @@
-import { useEffect } from "react";
+import { useEffect, ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { cn } from "../../lib/utils";
 
-const Modal = ({ open, onClose, title, description, children, footer, size = "md" }) => {
+interface ModalProps {
+  open: boolean;
+  onClose: () => void;
+  title?: ReactNode;
+  description?: ReactNode;
+  children?: ReactNode;
+  footer?: ReactNode;
+  size?: "sm" | "md" | "lg" | "xl";
+}
+
+const Modal = ({
+  open,
+  onClose,
+  title,
+  description,
+  children,
+  footer,
+  size = "md",
+}: ModalProps) => {
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && onClose?.();
     if (open) document.addEventListener("keydown", onKey);

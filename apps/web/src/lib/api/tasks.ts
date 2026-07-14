@@ -26,4 +26,10 @@ export const tasksApi = {
     const res = await client.delete<{ success: boolean }>(`/boards/${boardId}/tasks/${taskId}`);
     return res.data.success;
   },
+
+  // Alias for backward compatibility with components calling remove()
+  remove: async (boardId: string, taskId: string): Promise<boolean> => {
+    const res = await client.delete<{ success: boolean }>(`/boards/${boardId}/tasks/${taskId}`);
+    return res.data.success;
+  },
 };
