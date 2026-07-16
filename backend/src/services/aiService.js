@@ -1,6 +1,7 @@
 const { GoogleGenAI } = require("@google/genai");
 const ApiError = require("../utils/ApiError");
 
+// Explicitly use the definitive model designation string
 const MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 
 let client = null;
@@ -8,8 +9,9 @@ let client = null;
 const getClient = () => {
   const key = process.env.GEMINI_API_KEY;
 
+  // CHANGED: Fixed misleading error code (401 Unauthorized makes more sense than 503 Service Unavailable)
   if (!key || key === "your-gemini-api-key") {
-    throw new ApiError(503, "Gemini API key is not configured on the server");
+    throw new ApiError(401, "Gemini API key is not configured on the server");
   }
 
   if (!client) {
@@ -42,35 +44,50 @@ const extractJson = (text) => {
 
 const runPrompt = async (prompt) => {
   try {
+    // CORRECT CALL STRUCTURE: Explicit initialization parameter objects
     const response = await getClient().models.generateContent({
       model: MODEL,
-      contents: prompt,
+      contents: [prompt] 
     });
 
-    return response.text;
+    // Handle standard response extraction safely
+    if (response && response.text) {
+        return response.text;
+    }
+    
+    throw new ApiError(502, "Empty response received from AI service");
+
   } catch (err) {
     if (err.isApiError) throw err;
 
-    const status = err.status || err.statusCode;
+    // Capture standard API HTTP status codes safely 
+    const status = err.status || err.statusCode || (err.statusText ? 400 : null);
 
     if (status === 429) {
       throw new ApiError(
         429,
-        "AI quota exceeded. Check your Gemini plan/billing and try again later."
+        "AI quota exceeded. Please wait a minute before making another request."
+      );
+    }
+
+    if (status === 404) {
+      throw new ApiError(
+        404,
+        `Model variant '${MODEL}' not found. Verify model settings.`
       );
     }
 
     if (status === 400 || status === 401 || status === 403) {
       throw new ApiError(
-        503,
+        401,
         "AI request rejected - verify your GEMINI_API_KEY is valid."
       );
     }
 
-    console.error("Gemini request failed:", err.message);
+    console.error("Gemini request failed details:", err);
 
     throw new ApiError(
-      502,
+      503,
       "The AI service is temporarily unavailable. Please try again."
     );
   }
